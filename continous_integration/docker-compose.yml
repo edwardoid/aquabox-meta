@@ -1,0 +1,78 @@
+version: '3.3'
+services:
+    jenkins:
+        ports:
+            - '8080:8080'
+            - '50000:50000'
+        volumes:
+            - '/root/ci:/var/jenkins_home'
+        links:
+                - 'armv6:armv6_build_server'
+                - 'armv7:armv7_build_server'
+                - 'x86:x86_build_server'
+                - 'ionic:ionic_build_server'
+        image: 'jenkins/jenkins:lts'
+        user: 'root'
+
+    armv6:
+        user: 'root'
+        volumes:
+            - '/root/ci:/sources:ro'
+            - '/root/artifactory:/artefacts'
+            - './conan_armv6:/root/.conan/profiles/armv6'
+        build:
+            context: .
+            dockerfile: $PWD/../system/Docker/Dockerfile.base
+        environment:
+            - 'BUILD_PLATFORM=armv6'
+            - 'LD_FLAGS="-lpthread -lm"'
+            - 'CONAN_CPU_COUNT=1'
+    armv7:
+        user: 'root'
+        volumes:
+            - '/root/ci:/sources:ro'
+            - '/root/artifactory:/artefacts'
+            - './conan_armv7:/root/.conan/profiles/armv7'
+        build:
+            context: .
+            dockerfile: $PWD/../system/Docker/Dockerfile.base
+        environment:
+            - 'BUILD_PLATFORM=armv7'
+            - 'CONAN_CPU_COUNT=1'
+    x86:
+        user: 'root'
+        volumes:
+            - '/root/ci:/sources:ro'
+            - '/root/artifactory:/artefacts'
+        build:
+            context: .
+            dockerfile: $PWD/../system/Docker/Dockerfile.base
+        environment:
+            - 'CONAN_CPU_COUNT=1'
+            - 'BUILD_PLATFORM=x86_64'
+    ionic:
+        user: 'root'
+        volumes:
+            - '/root/ci:/sources:ro'
+            - '/root/artifactory:/artefacts'
+        build:
+            context: .
+            dockerfile: $PWD/../system/Docker/Dockerfile.ionic
+    
+    artifactory:
+        volumes:
+            - '/root/artifactory:/content'
+        environment:
+            - FOLDER=/content
+        ports:
+            - '8081:8080'
+        image: 'halverneus/static-file-server:latest'
+
+    conan_server:
+        volumes:
+            - '/root/artifactory/conan_server:/root/.conan_server'
+        ports:
+            - '9300:9300'
+        image: 'conanio/conan_server:latest' 
+volumes:
+    sources_dir:

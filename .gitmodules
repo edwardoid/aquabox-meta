@@ -1,0 +1,6 @@
+[submodule "system"]
+	path = system
+	url = https://github.com/edwardoid/aquabox.git
+[submodule "frontend"]
+	path = frontend
+	url = https://github.com/edwardoid/aquabox-frontend.git
