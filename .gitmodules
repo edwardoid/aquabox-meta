@@ -4,3 +4,6 @@
 [submodule "frontend"]
 	path = frontend
 	url = https://github.com/edwardoid/aquabox-frontend.git
+[submodule "hardware"]
+	path = hardware
+	url = https://github.com/edwardoid/aquabox-hardware.git
