@@ -1,0 +1,19 @@
+FROM bschwind/esp-open-rtos
+
+ENV DEBIAN_FRONTEND noninteractive
+
+LABEL maintainer="Edward Sargsyan <edward.sarkisyan@gmail.com>"
+
+USER root
+
+ENV ESP_RTOS_SDK=/home/esp/esp-open-rtos
+
+ENV GIT_SSL_NO_VERIFY=1
+
+RUN cd ${ESP_RTOS_SDK} && \
+    git config http.sslVerify false && \
+    git fetch --all && \
+    git checkout 8840eb04112d6f32e4cf4e29784c6d9d2bfca52e && \
+    git submodule update --init --recursive
+
+WORKDIR /

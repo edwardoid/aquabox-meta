@@ -1,0 +1,86 @@
+FROM node:18-buster
+
+ENV DEBIAN_FRONTEND noninteractive
+
+LABEL maintainer="Edward Sargsyan <edward.sarkisyan@gmail.com>"
+
+USER root
+
+# Common
+RUN apt-get update && \
+	apt-get install -qq -y \
+		vim \
+		aria2 \
+		apt-utils \
+        git
+
+# Place for pulling Docker dependencies
+
+# End of Docker dependencies
+
+RUN apt-get update && \
+    apt-get install -qq -y \
+        apt-utils \
+        gradle \
+        openjdk-11-jre \
+        openjdk-11-jdk
+
+ENV IONIC_VERSION=6.18.0 \
+    CORDOVA_VERSION=10.0.0 \
+    ANDROID_HOME=/opt/android-sdk-linux \
+    ANDROID_SDK_ROOT=/opt/android-sdk-linux \
+    ANDROID_TOOLS_VERSION=r25.2.5 \
+    ANDROID_API_LEVEL=android-27 \
+    ANDROID_BUILD_TOOLS_VERSION=30.0.3 \
+    APKTOOL_VERSION=2.5.0 \
+    ANDROID_HOME=/opt/android-sdk-linux \
+    ANDROID_CMDLINE_TOOLS_VERSION=9123335_latest
+
+RUN mkdir -p ${ANDROID_HOME} && \
+    cd ${ANDROID_HOME} && \
+    aria2c -x 16 -s 16 https://dl.google.com/android/repository/commandlinetools-linux-${ANDROID_CMDLINE_TOOLS_VERSION}.zip -o android_tools.zip && \
+    unzip android_tools.zip && \
+    rm android_tools.zip && \
+    mv cmdline-tools latest && \
+    mkdir -p ${ANDROID_HOME}/sdk && \
+    mkdir -p ${ANDROID_HOME}/sdk/cmdline-tools && \
+    mv latest ${ANDROID_HOME}/sdk/cmdline-tools
+
+ENV PATH=${PATH}:${ANDROID_SDK_ROOT}/sdk/cmdline-tools/latest:${ANDROID_SDK_ROOT}/sdk/cmdline-tools/latest/bin:${ANDROID_SDK_ROOT}/sdk/platform-tools
+
+RUN yes | sdkmanager --licenses
+
+RUN sdkmanager	'platform-tools' \
+		'platforms;android-32' \
+		'build-tools;30.0.3' \
+		'tools' \
+		'extras;m2repository;com;android;support;constraint;constraint-layout-solver;1.0.2' \
+		'extras;m2repository;com;android;support;constraint;constraint-layout;1.0.2' \
+		'extras;google;m2repository' \
+		'extras;android;m2repository' \
+		'extras;google;google_play_services'
+
+RUN echo "Installing Ionic & Cordova" && \
+    npm i -g @ionic/cli@${IONIC_VERSION} cordova@${CORDOVA_VERSION} cordova-res --unsafe-perm && \
+    ionic --no-interactive config set -g daemon.updates false && \
+    cordova telemetry off
+
+RUN echo "Installing Apktool" && \
+    wget -O /usr/local/bin/apktool -nv https://raw.githubusercontent.com/iBotPeaches/Apktool/master/scripts/linux/apktool && \
+    wget -O /usr/local/bin/apktool.jar -nv https://bitbucket.org/iBotPeaches/apktool/downloads/apktool_${APKTOOL_VERSION}.jar && \
+    chmod +x /usr/local/bin/apktool.jar /usr/local/bin/apktool
+
+RUN npm config set legacy-peer-deps true -g && \
+    npm install -g @ionic/cli && \
+    npm install -g @angular/cli@latest
+
+RUN useradd -m aquabox -d /home/aquabox -s /bin/bash && echo "aquabox:aquabox" | chpasswd && adduser aquabox sudo
+
+RUN echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers
+
+USER aquabox
+
+RUN echo 'alias build_android="ionic capacitor copy android && cd android && ./gradlew assembleDebug && cd .."' >> /home/aquabox/.bashrc && \
+    echo 'alias install_on_dev="adb shell pm clear com.frontend && adb uninstall com.frontend &&  adb install -r /home/aquabox/frontend/android/app/build/outputs/apk/debug/app-debug.apk"' >> /home/aquabox/.bashrc
+
+WORKDIR /home/aquabox
