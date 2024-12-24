@@ -7,3 +7,6 @@
 [submodule "hardware"]
 	path = hardware
 	url = git@github.com:edwardoid/aquabox-hardware.git
+[submodule "aquabox-react-frontend"]
+	path = aquabox-react-frontend
+	url = git@github.com:edwardoid/aquabox-react-frontend.git
